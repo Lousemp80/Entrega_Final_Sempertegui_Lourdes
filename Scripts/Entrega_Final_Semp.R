@@ -28,6 +28,8 @@ CABA_geometria %>%
   ggplot2::ggplot() + ## Setting color
   ggplot2::geom_sf(color = "red")  ### SF PAQUETE PARA LIDIAR CON EL PROCESAMIENTO DE DATOS GEOGRAFICOS
 
+ggsave("Plots/poligono_CABA.png", plot = last_plot())
+
 #### DESCARGA ELECTORAL CABA
 
 show_available_elections(viewer = T, source = "data")
@@ -35,7 +37,7 @@ show_available_elections(viewer = T, source = "data")
 CABA_dip2015 <- get_election_data("caba",	"dip",	"gral",	2015, level = "departamento")
 
 Tablas_unidad <- CABA_dip2015 %>% 
-  left_join(CABA_geometria)
+  left_join(CABA_geometria, by = c("codprov", "name_prov", "coddepto"))
 
 class(CABA_geometria)
 
@@ -49,7 +51,7 @@ Metrobus <- sf::read_sf("https://cdn.buenosaires.gob.ar/datosabiertos/datasets/t
 
 CABA <- get_geo(geo = "CABA")
 
-#### ESTO ME CAUSA ERROR - LO SOLUCIONE PERO PORQUE AL PONER Metrobus CONTRA METROBUS ME CAUSABA PROBLEMAS?
+#### ESTO ME CAUSA ERROR - LO SOLUCIONE! PERO PORQUE AL PONER Metrobus CONTRA METROBUS ME CAUSABA PROBLEMAS?
 
 ggplot(Metrobus) + 
   geom_sf(data = CABA) +
@@ -62,11 +64,12 @@ leaflet(Metrobus) %>%
   leaflet::addPolylines() %>% 
   addArgTiles()
 
-get_grid(district = "CABA")
+grilla_CABA <- get_grid(district = "CABA") ### GRILLAS DE FACETADO
 
-###MAPENADO CABA
+###  MAPENADO CABA
 
 library(sf)
+
 Tabla_plot <- Tablas_unidad %>% 
   get_names() %>% 
   st_as_sf() %>% ## lo que me hace el agrgar class sf al objeto
@@ -75,4 +78,5 @@ Tabla_plot <- Tablas_unidad %>%
   group_by(nombre_lista, depto) %>% 
   summarise(votos = sum(votos)) %>% 
   arrange(depto, desc(votos))
+
 
