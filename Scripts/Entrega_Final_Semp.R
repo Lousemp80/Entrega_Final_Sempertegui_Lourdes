@@ -17,7 +17,7 @@ CABA_GEOMETRIA
 
 rm(CABA_GEOMETRIA)
 
-CABA_geometria <- get_geo(geo = "CABA") %>% 
+CABA_geometria <- get_geo(geo = "CABA", simplified = FALSE) %>% ### Permite cambiar el formato original de CABA por ejemplo
   add_geo_codes()
 
 CABA_geometria
@@ -49,7 +49,7 @@ sf::st_as_sf(Tablas_unidad)  ### con st_as_sf nos permite convertir la tabla que
 
 Metrobus <- sf::read_sf("https://cdn.buenosaires.gob.ar/datosabiertos/datasets/transporte-y-obras-publicas/metrobus/recorrido-de-metrobus.geojson")
 
-CABA <- get_geo(geo = "CABA")
+CABA <- get_geo(geo = "CABA", simplified = FALSE)
 
 #### ESTO ME CAUSA ERROR - LO SOLUCIONE! PERO PORQUE AL PONER Metrobus CONTRA METROBUS ME CAUSABA PROBLEMAS?
 
@@ -69,14 +69,37 @@ grilla_CABA <- get_grid(district = "CABA") ### GRILLAS DE FACETADO
 ###  MAPENADO CABA
 
 library(sf)
+library(geofacet)
 
 Tabla_plot <- Tablas_unidad %>% 
   get_names() %>% 
   st_as_sf() %>% ## lo que me hace el agrgar class sf al objeto
   select(nombre_lista, votos, coddepto, depto) %>% 
   mutate(nombre_lista = fct_lump(f = nombre_lista, n = 3, w = votos, other_level = "Otro")) %>% 
-  group_by(nombre_lista, depto) %>% 
+  group_by(nombre_lista, depto, coddepto) %>% 
   summarise(votos = sum(votos)) %>% 
   arrange(depto, desc(votos))
 
+Tabla_plot %>% 
+  group_by(depto) %>% 
+  transmute(votos_emitidos = sum(votos)) %>% 
+  slice(1) %>% 
+  ggplot() +
+  geom_sf(aes(fill = votos_emitidos)) +
+  theme_void() +
+  scale_fill_viridis_c() ### trabaja esta función con la escala de colores a usar
 
+Tabla_plot %>% 
+  ggplot() +
+  geom_col(aes(x = votos, y = nombre_lista)) +
+  ### facet_wrap(~ depto) +  
+  facet_geo(grid = grilla_CABA, facets = ~coddepto)
+
+geofacet:: argentina_grid2 %>% 
+  grid_preview()
+
+grilla_CABA %>% 
+  recode_grid(type = "indec")
+
+get_grid("ARGENTINA") %>% 
+  recode_grid(type = "indec")
